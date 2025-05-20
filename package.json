@@ -1,0 +1,30 @@
+{
+  "dependencies": {
+    "express": "^5.1.0",
+    "git": "^0.1.5",
+    "uuid": "^11.1.0"
+  },
+  "name": "projet_app_web",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node Partie_BackEnd_Haris/src/server.js",
+  "dev": "nodemon Partie_BackEnd_Haris/src/server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hari5s/Projet_app_web.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/hari5s/Projet_app_web/issues"
+  },
+  "homepage": "https://github.com/hari5s/Projet_app_web#readme",
+  "description": "",
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
