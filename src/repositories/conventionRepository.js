@@ -1,47 +1,44 @@
-const Convention = require("../models/convention");
-const { v4: uuidv4 } = require("uuid");
+const pool = require('../config/database');
 
-class ConventionRepository {
-  constructor() {
-    this.conventions = [];
-  }
-
-  async getAll() {
-    return this.conventions;
-  }
-
-  async getById(id) {
-    return this.conventions.find(c => c.id === id) || null;
-  }
-
-  async create(data) {
-    const convention = new Convention({
-      id: uuidv4(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      ...data,
-    });
-    this.conventions.push(convention);
-    return convention;
-  }
-
-  async update(id, data) {
-    const index = this.conventions.findIndex(c => c.id === id);
-    if (index === -1) return null;
-    this.conventions[index] = {
-      ...this.conventions[index],
-      ...data,
-      updatedAt: new Date(),
-    };
-    return this.conventions[index];
-  }
-
-  async delete(id) {
-    const index = this.conventions.findIndex(c => c.id === id);
-    if (index === -1) return false;
-    this.conventions.splice(index, 1);
-    return true;
-  }
+async function createConvention(convention) {
+  const sql = `
+    INSERT INTO Conventions 
+    (id, studentId, schoolId, companyId, content, status, createdAt, updatedAt)
+    VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
+  `;
+  const params = [
+    convention.id,
+    convention.studentId,
+    convention.schoolId,
+    convention.companyId,
+    convention.content,
+    convention.status,
+  ];
+  const [result] = await pool.execute(sql, params);
+  return result;
 }
 
-module.exports = ConventionRepository;
+async function getConventionById(id) {
+  const sql = 'SELECT * FROM Conventions WHERE id = ?';
+  const [rows] = await pool.execute(sql, [id]);
+  return rows[0];
+}
+
+async function getAllConventions() {
+  const sql = 'SELECT * FROM Conventions';
+  const [rows] = await pool.execute(sql);
+  return rows;
+}
+
+async function updateConventionStatus(id, status) {
+  const sql = 'UPDATE Conventions SET status = ?, updatedAt = NOW() WHERE id = ?';
+  const [result] = await pool.execute(sql, [status, id]);
+  return result;
+}
+
+module.exports = {
+  createConvention,
+  getConventionById,
+  getAllConventions,
+  updateConventionStatus,
+};

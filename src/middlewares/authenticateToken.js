@@ -1,16 +1,15 @@
-const jwt = require("jsonwebtoken");
+const jwt = require('jsonwebtoken');
 
 function authenticateToken(req, res, next) {
-  const token = req.headers["authorization"];
-  if (!token) return res.status(401).json({ message: "Accès interdit" });
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) return res.status(401).json({ message: 'Accès interdit' });
 
-  try {
-    const decoded = jwt.verify(token.split(" ")[1], "SECRET_KEY");
-    req.user = decoded;
+  jwt.verify(token, 'SECRET_KEY', (err, user) => {
+    if (err) return res.status(403).json({ message: 'Token invalide' });
+    req.user = user;
     next();
-  } catch (error) {
-    res.status(403).json({ message: "Token invalide" });
-  }
+  });
 }
 
 module.exports = authenticateToken;

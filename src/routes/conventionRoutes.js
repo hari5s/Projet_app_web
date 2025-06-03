@@ -1,19 +1,11 @@
-const express = require("express");
-const ConventionRepository = require("../repositories/conventionRepository");
-const ConventionService = require("../services/conventionService");
-const ConventionController = require("../controllers/conventionController");
-
-
+const express = require('express');
 const router = express.Router();
+const conventionController = require('../controllers/conventionController');
+const authenticateToken = require('../middlewares/authenticateToken');
 
-const repo = new ConventionRepository();
-const service = new ConventionService(repo);
-const controller = new ConventionController(service);
-
-router.get("/", controller.list);
-router.get("/:id", controller.get);
-router.post("/", controller.create);
-router.put("/:id", controller.update);
-router.delete("/:id", controller.delete);
+router.post('/', authenticateToken, conventionController.createConvention);
+router.get('/', authenticateToken, conventionController.getAllConventions);
+router.get('/:id', authenticateToken, conventionController.getConvention);
+router.put('/:id/status', authenticateToken, conventionController.updateStatus);
 
 module.exports = router;
