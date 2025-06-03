@@ -14,7 +14,7 @@ const PORT = process.env.PORT || 3000;
     // Lancement du serveur
     app.listen(PORT, () => {
       console.log(`Serveur démarré sur http://localhost:${PORT}`);
-    });
+    }); 
   } catch (error) {
     console.error("Erreur lors de la synchronisation :", error);
   }
