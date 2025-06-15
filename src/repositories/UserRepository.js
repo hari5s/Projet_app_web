@@ -1,36 +1,27 @@
-const pool = require('../config/database');
+const User = require('../models/User');
 
-async function createUser(user) {
-  const sql = `
-    INSERT INTO Users (email, password_hash, role, createdAt, updatedAt)
-    VALUES (?, ?, ?, NOW(), NOW())
-  `;
-  const params = [user.email, user.password_hash, user.role];
-  const [result] = await pool.execute(sql, params);
-  return result.insertId;
+async function create(userData) {
+  const user = await User.create(userData);
+  return user;
 }
 
-async function findUserByEmail(email) {
-  const sql = 'SELECT * FROM Users WHERE email = ?';
-  const [rows] = await pool.execute(sql, [email]);
-  return rows[0];
+async function findByEmail(email) {
+  return await User.findOne({ where: { email } });
 }
 
-async function findUserById(id) {
-  const sql = 'SELECT * FROM Users WHERE id = ?';
-  const [rows] = await pool.execute(sql, [id]);
-  return rows[0];
+async function findById(id) {
+  return await User.findByPk(id);
 }
 
-async function getAllUsers() {
-  const sql = 'SELECT id, email, role, createdAt, updatedAt FROM Users';
-  const [rows] = await pool.execute(sql);
-  return rows;
+async function findAll() {
+  return await User.findAll({
+    attributes: { exclude: ['password'] }
+  });
 }
 
 module.exports = {
-  createUser,
-  findUserByEmail,
-  findUserById,
-  getAllUsers,
+  create,
+  findByEmail,
+  findById,
+  findAll,
 };

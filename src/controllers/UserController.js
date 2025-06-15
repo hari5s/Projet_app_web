@@ -1,73 +1,40 @@
-  const bcrypt = require('bcrypt');
-  const jwt = require('jsonwebtoken');
-  const { v4: uuidv4 } = require('uuid');
-  const userRepository = require('../repositories/UserRepository');
-
-  const SECRET_KEY = 'SECRET_KEY';
-
-const validRoles = ['Student', 'School', 'Company'];
+const userService = require('../services/UserService');
 
 async function register(req, res) {
   try {
-    const { email, password, role } = req.body;
-
-    if (!validRoles.includes(role)) {
-      return res.status(400).json({ message: 'Role invalide. Choisissez parmi Student, School, Company.' });
-    }
-
-    const existingUser = await userRepository.findUserByEmail(email);
-    if (existingUser) {
-      return res.status(400).json({ message: 'Email déjà utilisé' });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const newUser = {
-      email,
-      password_hash: hashedPassword,
-      role,
-    };
-
-    const userId = await userRepository.createUser(newUser);
-
-    res.status(201).json({ message: 'Utilisateur créé', id: userId });
+    const newUser = await userService.register(req.body);
+    res.status(201).json({ message: 'Utilisateur créé', userId: newUser.id });
   } catch (error) {
-    console.error('Erreur dans register :', error);
+    if (error.message.includes('Données manquantes') || error.message.includes('Rôle invalide') || error.message.includes('Email déjà utilisé')) {
+      return res.status(400).json({ message: error.message });
+    }
     res.status(500).json({ message: 'Erreur serveur' });
   }
 }
 
-
-
-  async function login(req, res) {
-    try {
-      const { email, password } = req.body;
-      const user = await userRepository.findUserByEmail(email);
-      if (!user) {
-        return res.status(400).json({ message: 'Email ou mot de passe incorrect' });
-      }
-      const validPassword = await bcrypt.compare(password, user.password);
-      if (!validPassword) {
-        return res.status(400).json({ message: 'Email ou mot de passe incorrect' });
-      }
-      const token = jwt.sign({ id: user.id, role: user.role }, SECRET_KEY, { expiresIn: '1h' });
-      res.json({ token });
-    } catch (error) {
-      res.status(500).json({ message: 'Erreur serveur' });
+async function login(req, res) {
+  try {
+    const token = await userService.login(req.body);
+    res.json({ token });
+  } catch (error) {
+    if (error.message === 'Authentification échouée') {
+      return res.status(401).json({ message: 'Email ou mot de passe incorrect' });
     }
+    res.status(500).json({ message: 'Erreur serveur' });
   }
+}
 
-  async function getUsers(req, res) {
+async function getUsers(req, res) {
     try {
-      const users = await userRepository.getAllUsers();
-      res.json(users);
+        const users = await userService.getAllUsers();
+        res.json(users);
     } catch (error) {
-      res.status(500).json({ message: 'Erreur serveur' });
+        res.status(500).json({ message: 'Erreur serveur' });
     }
-  }
+}
 
-  module.exports = {
-    register,
-    login,
-    getUsers,
-  };
+module.exports = {
+  register,
+  login,
+  getUsers
+};

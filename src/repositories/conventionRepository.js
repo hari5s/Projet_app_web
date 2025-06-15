@@ -1,44 +1,40 @@
-const pool = require('../config/database');
+const Convention = require('../models/convention');
 
-async function createConvention(convention) {
-  const sql = `
-    INSERT INTO Conventions 
-    (id, studentId, schoolId, companyId, content, status, createdAt, updatedAt)
-    VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
-  `;
-  const params = [
-    convention.id,
-    convention.studentId,
-    convention.schoolId,
-    convention.companyId,
-    convention.content,
-    convention.status,
-  ];
-  const [result] = await pool.execute(sql, params);
-  return result;
+async function create(conventionData) {
+  return await Convention.create(conventionData);
 }
 
-async function getConventionById(id) {
-  const sql = 'SELECT * FROM Conventions WHERE id = ?';
-  const [rows] = await pool.execute(sql, [id]);
-  return rows[0];
+async function findById(id) {
+  return await Convention.findByPk(id);
 }
 
-async function getAllConventions() {
-  const sql = 'SELECT * FROM Conventions';
-  const [rows] = await pool.execute(sql);
-  return rows;
+async function findAll() {
+  return await Convention.findAll();
 }
 
-async function updateConventionStatus(id, status) {
-  const sql = 'UPDATE Conventions SET status = ?, updatedAt = NOW() WHERE id = ?';
-  const [result] = await pool.execute(sql, [status, id]);
-  return result;
+async function findAllBySchoolId(schoolId) {
+  return await Convention.findAll({
+    where: { schoolId: schoolId }
+  });
+}
+
+async function findByCompletionToken(token) {
+  return await Convention.findOne({ where: { completionToken: token } });
+}
+
+async function update(id, conventionData) {
+  const convention = await Convention.findByPk(id);
+  if (convention) {
+    return await convention.update(conventionData);
+  }
+  return null;
 }
 
 module.exports = {
-  createConvention,
-  getConventionById,
-  getAllConventions,
-  updateConventionStatus,
+  create,
+  findById,
+  findAll,
+  findAllBySchoolId,
+  findByCompletionToken,
+  update,
 };

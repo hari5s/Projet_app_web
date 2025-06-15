@@ -1,16 +1,15 @@
-// app.js
-const express = require("express");
-const conventionRoutes = require("./routes/conventionRoutes");
-const userRoutes = require("./routes/UserRoutes");
+const express = require('express');
 const app = express();
 
-// Middleware pour parser le JSON des requêtes
+const userRoutes = require('./routes/UserRoutes');
+const conventionRoutes = require('./routes/conventionRoutes');
+const publicRoutes = require('./routes/publicRoutes'); 
+
 app.use(express.json());
 
-// Ajout des routes utilisateur
-app.use("/api/users", userRoutes);
+app.use('/public', publicRoutes);
 
-// Route principale pour gérer les conventions
-app.use("/api/conventions", conventionRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/conventions', conventionRoutes);
 
 module.exports = app;

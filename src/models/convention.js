@@ -1,5 +1,6 @@
-const { DataTypes } = require("sequelize");
-const sequelize = require("../config/database");
+const { DataTypes } = require('sequelize');
+const sequelize = require('../config/database');
+const User = require('./User');
 
 const Convention = sequelize.define("Convention", {
   id: {
@@ -8,27 +9,56 @@ const Convention = sequelize.define("Convention", {
     primaryKey: true,
   },
   studentId: {
-    type: DataTypes.STRING,
+    type: DataTypes.UUID,
     allowNull: false,
+    references: { model: User, key: 'id' }
   },
   schoolId: {
-    type: DataTypes.STRING,
+    type: DataTypes.UUID,
     allowNull: false,
+    references: { model: User, key: 'id' }
   },
   companyId: {
-    type: DataTypes.STRING,
+    type: DataTypes.UUID,
     allowNull: false,
+    references: { model: User, key: 'id' }
   },
   content: {
     type: DataTypes.TEXT,
-    allowNull: false,
+    allowNull: true,
   },
   status: {
-    type: DataTypes.ENUM("En attente", "Signée", "Refusée", "À signer"),
+    type: DataTypes.ENUM("En attente", "À signer", "Signée", "Refusée"),
     allowNull: false,
+    defaultValue: "En attente"
+  },
+  studentSignature: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
+  schoolSignature: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
+  companySignature: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
+  completionToken: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    unique: true,
+  },
+  companyTutorName: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  companyAddress: {
+    type: DataTypes.STRING,
+    allowNull: true,
   },
 }, {
-  timestamps: true, // Crée automatiquement createdAt et updatedAt
+  timestamps: true,
 });
 
 module.exports = Convention;

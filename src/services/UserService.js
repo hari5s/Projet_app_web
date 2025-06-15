@@ -1,29 +1,59 @@
-const UserRepository = require("../repositories/UserRepository");
-const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
-const User = require("../models/User");
+const userRepository = require('../repositories/UserRepository');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
-class UserService {
-  async registerUser(email, password, role) {
-    const hashedPassword = await bcrypt.hash(password, 10);
-    return await UserRepository.create({ email, password: hashedPassword, role });
+const JWT_SECRET = process.env.JWT_SECRET;
+const validRoles = ['Student', 'School', 'Company'];
+
+async function register(userData) {
+  const { email, password, role, phoneNumber } = userData;
+
+  if (!email || !password || !role) {
+    throw new Error('Données manquantes (email, password, role)');
+  }
+  if (!validRoles.includes(role)) {
+    throw new Error('Rôle invalide');
   }
 
-  async loginUser(email, password) {
-    const user = await UserRepository.findByEmail(email);
-    if (!user) throw new Error("Utilisateur non trouvé");
-
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) throw new Error("Mot de passe incorrect");
-
-    return user;
+  const existingUser = await userRepository.findByEmail(email);
+  if (existingUser) {
+    throw new Error('Email déjà utilisé');
   }
 
-  async getUserById(id) {
-    return await UserRepository.findById(id);
-  }
+  const newUserPayload = {
+    email,
+    password,
+    role,
+    phoneNumber,
+  };
+
+  const newUser = await userRepository.create(newUserPayload);
+  return newUser;
 }
 
-module.exports = new UserService();
+async function login(credentials) {
+  const { email, password } = credentials;
 
-module.exports = UserService;
+  const user = await userRepository.findByEmail(email);
+  if (!user) {
+    throw new Error('Authentification échouée');
+  }
+
+  const isPasswordValid = await bcrypt.compare(password, user.password);
+  if (!isPasswordValid) {
+    throw new Error('Authentification échouée');
+  }
+
+  const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
+  return token;
+}
+
+async function getAllUsers() {
+    return await userRepository.findAll();
+}
+
+module.exports = {
+  register,
+  login,
+  getAllUsers,
+};
