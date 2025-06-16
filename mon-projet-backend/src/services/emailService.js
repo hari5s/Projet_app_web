@@ -1,69 +1,41 @@
 const nodemailer = require('nodemailer');
-const userRepository = require('../repositories/UserRepository');
 
 let transporter;
 
 async function setupEmail() {
   if (transporter) return;
-
   let testAccount = await nodemailer.createTestAccount();
-  
-  console.log('**********************************************');
-  console.log('*** Service Email de Développement (Ethereal) ***');
-  console.log('**********************************************');
-  console.log(`Identifiant: ${testAccount.user}`);
-  console.log(`Mot de passe: ${testAccount.pass}`);
-  console.log(`Pour voir les emails envoyés, allez sur: ${nodemailer.getTestMessageUrl({})} (ce lien changera à chaque redémarrage)`);
-  console.log('**********************************************');
-
-
   transporter = nodemailer.createTransport({
-    host: 'smtp.ethereal.email',
-    port: 587,
-    secure: false, 
-    auth: {
-      user: testAccount.user,
-      pass: testAccount.pass,
-    },
+    host: 'smtp.ethereal.email', port: 587, secure: false, 
+    auth: { user: testAccount.user, pass: testAccount.pass },
   });
+  console.log(`Ethereal Email ready. Preview at: ${nodemailer.getTestMessageUrl({})}`);
 }
 
-/**
- * Envoie l'email de notification de convention signée.
- * @param {object} convention - L'objet convention complet.
- * @param {Buffer} pdfBuffer - Le PDF à attacher.
- */
-async function sendConventionSignedEmail(convention, pdfBuffer) {
-  if (!transporter) {
-    console.error("Le service d'email n'est pas initialisé. Lancez setupEmail() au démarrage.");
-    return;
-  }
-
-  // On récupère les emails des participants
-  const student = await userRepository.findById(convention.studentId);
-  const school = await userRepository.findById(convention.schoolId);
-  const company = await userRepository.findById(convention.companyId);
-
-  const recipients = [student.email, school.email, company.email].join(', ');
-
+async function sendStudentInvitationEmail(convention) {
+  const completionLink = `http://localhost:5173/complete-student/${convention.studentCompletionToken}`;
   const info = await transporter.sendMail({
     from: '"Gestionnaire de Conventions" <no-reply@gestion-stages.com>',
-    to: recipients,
-    subject: `Votre convention de stage N°${convention.id} est signée !`,
-    text: "Bonjour,\n\nVous trouverez en pièce jointe la version finale de votre convention de stage, signée par toutes les parties.\n\nCordialement,\nL'équipe de Gestion de Stages.",
-    html: "<p>Bonjour,</p><p>Vous trouverez en pièce jointe la version finale de votre convention de stage, signée par toutes les parties.</p><p>Cordialement,<br>L'équipe de Gestion de Stages.</p>",
-    attachments: [
-      {
-        filename: `convention-${convention.id}.pdf`,
-        content: pdfBuffer,
-        contentType: 'application/pdf',
-      },
-    ],
+    to: convention.studentEmail,
+    subject: `Action requise pour votre convention de stage`,
+    html: `<p>Bonjour,</p><p>Une convention de stage a été initiée pour vous. Veuillez cliquer sur le lien ci-dessous pour compléter vos informations :</p><p><a href="${completionLink}">Compléter ma partie de la convention</a></p>`,
   });
-
-  console.log(`Email de convention signée envoyé: ${info.messageId}`);
-  // IMPORTANT : Ce lien permet de voir l'email envoyé dans le navigateur
-  console.log(`URL de prévisualisation de l'email: ${nodemailer.getTestMessageUrl(info)}`);
+  console.log(`Email d'invitation étudiant envoyé: ${nodemailer.getTestMessageUrl(info)}`);
 }
 
-module.exports = { setupEmail, sendConventionSignedEmail };
+async function sendCompanyInvitationEmail(convention) {
+  const completionLink = `http://localhost:5173/complete-company/${convention.companyCompletionToken}`;
+  const info = await transporter.sendMail({
+    from: '"Gestionnaire de Conventions" <no-reply@gestion-stages.com>',
+    to: convention.companyEmail,
+    subject: `Demande de convention de stage`,
+    html: `<p>Bonjour,</p><p>Une convention de stage vous concernant a été initiée. Veuillez cliquer sur le lien ci-dessous pour vérifier et compléter les informations :</p><p><a href="${completionLink}">Vérifier et compléter la convention</a></p>`,
+  });
+  console.log(`Email d'invitation entreprise envoyé: ${nodemailer.getTestMessageUrl(info)}`);
+}
+
+async function sendFinalConventionEmail(convention, pdfBuffer) {
+    // Logique pour envoyer l'email final à toutes les parties...
+}
+
+module.exports = { setupEmail, sendStudentInvitationEmail, sendCompanyInvitationEmail, sendFinalConventionEmail };

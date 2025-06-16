@@ -1,125 +1,53 @@
 const conventionService = require('../services/conventionService');
 
-async function createConvention(req, res) {
+async function create(req, res) {
   try {
-    const newConvention = await conventionService.createConvention(req.body);
-    res.status(201).json(newConvention);
-  } catch (error) {
-    if (error.message.includes('requis') || error.message.includes('n\'existe pas')) {
-      return res.status(400).json({ message: error.message });
-    }
-    res.status(500).json({ message: 'Erreur serveur' });
-  }
-}
-
-async function getConvention(req, res) {
-  try {
-    const { id } = req.params;
-    const convention = await conventionService.getConventionById(id);
-    res.json(convention);
-  } catch (error) {
-    if (error.message === 'Convention non trouvée') {
-      return res.status(404).json({ message: error.message });
-    }
-    res.status(500).json({ message: 'Erreur serveur' });
-  }
-}
-
-async function getAllConventions(req, res) {
-  try {
-    const loggedInUser = req.user;
-    let conventions;
-
-    if (loggedInUser.role === 'School') {
-      conventions = await conventionService.getConventionsForSchool(loggedInUser.id);
-    } else if (loggedInUser.role === 'Student') {
-      conventions = await conventionService.getConventionsForStudent(loggedInUser.id);
-    } else {
-      conventions = []; 
-    }
-    res.json(conventions);
-  } catch (error) {
-    console.error("Erreur dans getAllConventions:", error);
-    res.status(500).json({ message: 'Erreur serveur' });
-  }
-}
-
-async function updateStatus(req, res) {
-  try {
-    const { id } = req.params;
-    const { status } = req.body;
-    const updatedConvention = await conventionService.updateConventionStatus(id, status);
-    res.json({ message: 'Statut mis à jour', convention: updatedConvention });
-  } catch (error) {
-    if (error.message === 'Statut invalide') {
-      return res.status(400).json({ message: error.message });
-    }
-    if (error.message.includes('non trouvée')) {
-        return res.status(404).json({ message: error.message });
-    }
-    res.status(500).json({ message: 'Erreur serveur' });
-  }
-}
-
-async function signConvention(req, res) {
-  try {
-    const { id } = req.params;
-    const user = req.user;
-    const updatedConvention = await conventionService.signConvention(id, user);
-    res.json({ message: 'Convention signée avec succès.', convention: updatedConvention });
-  } catch (error) {
-    if (error.message.includes('non trouvée') || error.message.includes('non autorisée')) {
-      return res.status(404).json({ message: error.message });
-    }
-    if (error.message.includes('déjà signé')) {
-      return res.status(400).json({ message: error.message });
-    }
-    console.error("Erreur dans signConvention:", error);
-    res.status(500).json({ message: 'Erreur serveur' });
-  }
-}
-
-async function initiate(req, res) {
-  try {
-    const { id } = req.params;
-    const user = req.user;
-    const conventionWithToken = await conventionService.initiateConvention(id, user);
-    res.json({ 
-      message: 'Lien de complétion généré.', 
-      completionToken: conventionWithToken.completionToken 
-    });
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
+    const convention = await conventionService.createConventionBySchool(req.user.id, req.body);
+    res.status(201).json(convention);
+  } catch (error) { res.status(400).json({ message: error.message }); }
 }
 
 async function getPublic(req, res) {
+      console.log("--- CONTRÔLEUR: Tentative de création par l'utilisateur avec ID:", req.user?.id, "et rôle:", req.user?.role);
+    try {
+        const type = req.path.includes('/student/') ? 'student' : 'company';
+        const convention = await conventionService.getConventionByToken(req.params.token, type);
+        res.json(convention);
+    } catch (error) { res.status(404).json({ message: error.message }); }
+}
+
+async function completeStudent(req, res) {
+    try {
+        const convention = await conventionService.completeByStudent(req.params.token, req.body);
+        res.json(convention);
+    } catch (error) { res.status(400).json({ message: error.message }); }
+}
+
+async function completeCompany(req, res) {
+    try {
+        const convention = await conventionService.completeByCompany(req.params.token, req.body);
+        res.json(convention);
+    } catch (error) { res.status(400).json({ message: error.message }); }
+}
+
+async function getForUser(req, res) {
+  console.log("--- CONTRÔLEUR: Entrée dans getForUser pour le rôle:", req.user.role); // <-- LIGNE 1
   try {
-    const { token } = req.params;
-    const convention = await conventionService.getConventionByToken(token);
-    res.json(convention);
+    const conventions = await conventionService.getConventionsForUser(req.user);
+    res.json(conventions);
   } catch (error) {
-    res.status(404).json({ message: error.message });
+    console.error("--- ERREUR CAPTURÉE DANS LE CONTRÔLEUR getForUser ---", error); // <-- LIGNE 2
+    res.status(500).json({ message: 'Erreur serveur' });
   }
 }
 
-async function completePublic(req, res) {
-  try {
-    const { token } = req.params;
-    const updatedConvention = await conventionService.completeConventionByToken(token, req.body);
-    res.json({ message: 'Convention complétée avec succès.', convention: updatedConvention });
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
+async function sign(req, res) {
+    try {
+        const convention = await conventionService.signConvention(req.params.id, req.user);
+        res.json(convention);
+    } catch (error) { res.status(400).json({ message: error.message }); }
 }
 
-module.exports = {
-  createConvention,
-  getConvention,
-  getAllConventions,
-  updateStatus,
-  signConvention,
-  initiate,
-  getPublic,
-  completePublic,
-};
+// ... Ajoutez ici d'autres contrôleurs si nécessaire (getById etc.)
+
+module.exports = { create, getPublic, completeStudent, completeCompany, getForUser, sign };

@@ -13,6 +13,7 @@ async function findAll() {
 }
 
 async function findAllBySchoolId(schoolId) {
+  console.log("--- REPOSITORY: Entrée dans findAllBySchoolId avec l'ID école:", schoolId); // <-- LIGNE 5
   return await Convention.findAll({
     where: { schoolId: schoolId }
   });

@@ -1,14 +1,26 @@
-// src/components/ProtectedRoute.jsx
 import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-function ProtectedRoute() {
-  const { isAuthenticated } = useAuth();
+function ProtectedRoute({ allowedRoles }) {
+  // On récupère le nouvel état 'isInitializing'
+  const { user, isAuthenticated, isInitializing } = useAuth();
+  const location = useLocation();
 
-  // Si l'utilisateur est authentifié, on affiche le contenu de la page demandée (grâce à <Outlet />)
-  // Sinon, on le redirige de force vers la page de connexion
-  return isAuthenticated ? <Outlet /> : <Navigate to="/login" replace />;
+  // NOUVELLE LOGIQUE : Si le contexte est en cours d'initialisation, on attend
+  if (isInitializing) {
+    return <div>Chargement de la session...</div>; // Ou un composant de chargement plus joli
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <Outlet />;
 }
 
 export default ProtectedRoute;

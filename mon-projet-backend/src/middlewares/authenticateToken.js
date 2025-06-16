@@ -1,3 +1,4 @@
+// src/middlewares/authenticateToken.js
 const jwt = require('jsonwebtoken');
 
 function authenticateToken(req, res, next) {
@@ -8,13 +9,13 @@ function authenticateToken(req, res, next) {
     return res.status(401).json({ message: 'Accès interdit: token manquant' });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-    if (err) {
-      return res.status(403).json({ message: 'Token invalide' });
-    }
-    req.user = user;
+  try {
+    const userPayload = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = userPayload;
     next();
-  });
+  } catch (err) {
+    return res.status(403).json({ message: 'Token invalide ou expiré' });
+  }
 }
 
 module.exports = authenticateToken;

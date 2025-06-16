@@ -2,73 +2,64 @@
 
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { jwtDecode } from 'jwt-decode';
-import api from '../services/api'; // Notre instance axios pré-configurée
+import api from '../services/api';
 
-// On crée le Contexte qui va stocker les informations
 const AuthContext = createContext(null);
 
-// On crée le "Fournisseur" (Provider) qui va rendre ces informations
-// accessibles à toute notre application
 export function AuthProvider({ children }) {
-  // On utilise des états pour garder en mémoire le token et les infos de l'utilisateur
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('authToken') || null);
+  const [token, setToken] = useState(() => localStorage.getItem('authToken') || null);
+  const [isInitializing, setIsInitializing] = useState(true); // <-- ÉTAT AJOUTÉ
 
-  // Ce hook s'exécute au chargement pour vérifier si un token existe déjà
   useEffect(() => {
-    if (token) {
-      try {
+    try {
+      if (token) {
         const decodedUser = jwtDecode(token);
         setUser({ id: decodedUser.id, role: decodedUser.role });
-      } catch (error) {
-        // Si le token est invalide, on le supprime
-        console.error("Token invalide trouvé:", error);
-        localStorage.removeItem('authToken');
-        setToken(null);
       }
+    } catch (error) {
+      // Token invalide, on nettoie
+      localStorage.removeItem('authToken');
+      setToken(null);
+      setUser(null);
+    } finally {
+      // Dans tous les cas, l'initialisation est terminée
+      setIsInitializing(false); // <-- ON MET À JOUR L'ÉTAT
     }
   }, [token]);
 
-  // La fonction pour se connecter
   const login = async (email, password) => {
     try {
       const response = await api.post('/api/users/login', { email, password });
       const receivedToken = response.data.token;
       
-      localStorage.setItem('authToken', receivedToken); // On stocke le token dans le navigateur
-      setToken(receivedToken); // On met à jour l'état du token dans React
-      
+      localStorage.setItem('authToken', receivedToken);
       const decodedUser = jwtDecode(receivedToken);
-      setUser({ id: decodedUser.id, role: decodedUser.role }); // On met à jour l'utilisateur
-      return true; // La connexion est un succès
+      const userPayload = { id: decodedUser.id, role: decodedUser.role };
+
+      // On met à jour les états
+      setToken(receivedToken);
+      setUser(userPayload);
+      
+      // CHANGEMENT CLÉ : On retourne les infos de l'utilisateur pour une redirection immédiate
+      return { success: true, user: userPayload };
     } catch (error) {
-      console.error("Erreur de connexion:", error);
-      logout(); // On nettoie tout en cas d'erreur
-      return false; // La connexion est un échec
+      logout();
+      return { success: false, user: null }; // On retourne un échec
     }
   };
 
-  // La fonction pour se déconnecter
   const logout = () => {
-    localStorage.removeItem('authToken'); // On retire le token du navigateur
+    localStorage.removeItem('authToken');
     setToken(null);
     setUser(null);
   };
 
-  // On définit l'objet "value" que notre contexte va fournir
-  const value = {
-    user,
-    token,
-    login,
-    logout,
-    isAuthenticated: !!token, // Astuce : !!token transforme la string en booléen (true si token existe, false sinon)
-  };
+  const value = { user, token, isInitializing, login, logout, isAuthenticated: !!token };
 
-  // On retourne le Provider avec la "value" pour que les enfants y aient accès
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-// On crée un hook personnalisé pour consommer le contexte plus facilement dans nos pages
 export function useAuth() {
   return useContext(AuthContext);
 }

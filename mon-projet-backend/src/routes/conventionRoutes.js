@@ -3,15 +3,18 @@ const router = express.Router();
 const conventionController = require('../controllers/conventionController');
 const authenticateToken = require('../middlewares/authenticateToken');
 
-router.use(authenticateToken);
+// On retire la ligne "router.use(authenticateToken);"
 
-router.post('/', conventionController.createConvention);
-router.get('/', conventionController.getAllConventions);
-router.get('/:id', conventionController.getConvention);
-router.put('/:id/status', conventionController.updateStatus);
-router.post('/:id/sign', conventionController.signConvention);
+// On ajoute 'authenticateToken' directement sur chaque route qui en a besoin
 
-// Route pour que l'étudiant génère le lien pour l'entreprise
-router.post('/:id/initiate', conventionController.initiate);
+// Pour créer une convention, il faut être connecté
+router.post('/', authenticateToken, conventionController.create);
+
+// Pour voir son dashboard, il faut être connecté
+router.get('/', authenticateToken, conventionController.getForUser);
+
+// Pour signer, il faut être connecté
+router.post('/:id/sign', authenticateToken, conventionController.sign);
+
 
 module.exports = router;

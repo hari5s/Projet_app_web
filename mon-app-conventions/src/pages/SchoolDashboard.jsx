@@ -2,41 +2,34 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Link } from 'react-router-dom'; // <-- Importer Link
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 
 function SchoolDashboard() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [conventions, setConventions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (user?.role === 'School') {
-      const fetchConventions = async () => {
-        try {
-          const response = await api.get('/api/conventions');
-          setConventions(response.data);
-        } catch (err) {
-          setError('Impossible de charger la liste des conventions.');
-          console.error(err);
-        } finally {
-          setLoading(false);
-        }
-      };
-      fetchConventions();
-    } else {
-      setLoading(false);
-    }
-  }, [user]);
+    if (!user) return;
 
-  if (loading) {
-    return <div className="text-center p-10">Chargement des conventions...</div>;
-  }
-  if (error) {
-    return <div className="text-center p-10 text-red-500">{error}</div>;
-  }
-  
+    const fetchConventions = async () => {
+      try {
+        const response = await api.get('/api/conventions');
+        setConventions(response.data);
+      } catch (err) {
+        setError('Impossible de charger la liste des conventions.');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchConventions();
+  }, [user]); 
+
+
   const getStatusBadgeColor = (status) => {
     switch (status) {
       case 'Signée': return 'bg-green-100 text-green-800';
@@ -46,6 +39,9 @@ function SchoolDashboard() {
     }
   };
 
+  if (loading) return <div className="text-center p-10">Chargement des conventions...</div>;
+  if (error) return <div className="text-center p-10 text-red-500">{error}</div>;
+
   return (
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
@@ -54,6 +50,18 @@ function SchoolDashboard() {
           Déconnexion
         </button>
       </div>
+
+      {/* --- BLOC AJOUTÉ --- */}
+      <div className="mb-6 text-right">
+        <button 
+          onClick={() => navigate('/convention/nouveau')}
+          className="bg-primary-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-primary-700 transition-colors"
+        >
+          + Créer une nouvelle convention
+        </button>
+      </div>
+      {/* --- FIN DU BLOC --- */}
+      
       <div className="bg-white p-6 rounded-lg shadow-md">
         <h2 className="text-xl font-semibold mb-4">Liste des Conventions</h2>
         <div className="overflow-x-auto">
@@ -65,13 +73,11 @@ function SchoolDashboard() {
                 <th className="py-2 px-4 text-left">Statut</th>
               </tr>
             </thead>
-            {/* ----- BLOC MIS À JOUR ----- */}
             <tbody>
               {conventions.length > 0 ? (
                 conventions.map((conv) => (
                   <tr key={conv.id} className="border-b hover:bg-gray-50">
                     <td className="py-2 px-4">
-                      {/* Le lien pointe vers la page de la convention spécifique */}
                       <Link to={`/convention/${conv.id}`} className="text-blue-600 hover:underline">
                         {conv.studentId}
                       </Link>
@@ -90,7 +96,6 @@ function SchoolDashboard() {
                 </tr>
               )}
             </tbody>
-            {/* ----- FIN DU BLOC ----- */}
           </table>
         </div>
       </div>
